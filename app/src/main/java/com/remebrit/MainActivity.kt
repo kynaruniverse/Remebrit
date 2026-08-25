@@ -26,6 +26,7 @@ import com.remebrit.data.entity.RemebritItem
 import com.remebrit.data.repository.ItemRepository
 import com.remebrit.ui.home.HomeViewModel
 import com.remebrit.ui.item.ItemDetailViewModel
+import com.remebrit.ui.search.SearchScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,7 +43,16 @@ fun RemebritApp(repository: ItemRepository) {
         Surface(modifier = Modifier.fillMaxSize()) {
             NavHost(navController = navController, startDestination = "home") {
                 composable("home") {
-                    HomeScreen(repository) { id -> navController.navigate("item/$id") }
+                    HomeScreen(
+                        repository,
+                        onOpenItem = { id -> navController.navigate("item/$id") },
+                        onSearch = { navController.navigate("search") }
+                    )
+                }
+                composable("search") {
+                    SearchScreen(repository, onBack = { navController.popBackStack() }) { id ->
+                        navController.navigate("item/$id")
+                    }
                 }
                 composable("item/{id}") { backStackEntry ->
                     val id = backStackEntry.arguments?.getString("id")?.toLongOrNull()
@@ -56,14 +66,21 @@ fun RemebritApp(repository: ItemRepository) {
 }
 
 @Composable
-fun HomeScreen(repository: ItemRepository, onOpenItem: (Long) -> Unit) {
+fun HomeScreen(repository: ItemRepository, onOpenItem: (Long) -> Unit, onSearch: () -> Unit) {
     val factory = viewModelFactory { initializer { HomeViewModel(repository) } }
     val viewModel: HomeViewModel = viewModel(factory = factory)
     val sections by viewModel.sections.collectAsState()
     var text by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-        Text("Remebrit", style = MaterialTheme.typography.headlineMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Remebrit", style = MaterialTheme.typography.headlineMedium)
+            TextButton(onClick = onSearch) { Text("Search") }
+        }
         Spacer(Modifier.height(16.dp))
 
         OutlinedTextField(

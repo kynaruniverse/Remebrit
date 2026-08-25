@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 class ItemRepository(private val dao: ItemDao) {
     fun activeItems(): Flow<List<RemebritItem>> = dao.observeByStatus(ItemStatus.ACTIVE)
     fun observeItem(id: Long): Flow<RemebritItem?> = dao.observeById(id)
+    fun search(query: String): Flow<List<RemebritItem>> = dao.search(query)
 
     suspend fun capture(content: String) {
         if (content.isBlank()) return
