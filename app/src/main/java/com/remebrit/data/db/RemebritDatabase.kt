@@ -18,7 +18,7 @@ class Converters {
     fun toStatus(value: String): ItemStatus = ItemStatus.valueOf(value)
 }
 
-@Database(entities = [RemebritItem::class], version = 1, exportSchema = false)
+@Database(entities = [RemebritItem::class], version = 2, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class RemebritDatabase : RoomDatabase() {
     abstract fun itemDao(): ItemDao
@@ -32,7 +32,9 @@ abstract class RemebritDatabase : RoomDatabase() {
                     context.applicationContext,
                     RemebritDatabase::class.java,
                     "remebrit.db"
-                ).build().also { INSTANCE = it }
+                )
+                    .fallbackToDestructiveMigration()
+                    .build().also { INSTANCE = it }
             }
     }
 }

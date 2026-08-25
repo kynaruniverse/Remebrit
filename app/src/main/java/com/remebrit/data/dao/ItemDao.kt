@@ -13,6 +13,12 @@ interface ItemDao {
     @Update
     suspend fun update(item: RemebritItem)
 
+    @Delete
+    suspend fun delete(item: RemebritItem)
+
+    @Query("SELECT * FROM items WHERE id = :id")
+    fun observeById(id: Long): Flow<RemebritItem?>
+
     @Query("SELECT * FROM items WHERE status = :status ORDER BY createdAt DESC")
     fun observeByStatus(status: ItemStatus = ItemStatus.ACTIVE): Flow<List<RemebritItem>>
 

@@ -11,5 +11,6 @@ data class RemebritItem(
     val content: String,
     val createdAt: Long = System.currentTimeMillis(),
     val status: ItemStatus = ItemStatus.ACTIVE,
+    val relevantAt: Long? = null,
     val completedAt: Long? = null
 )
