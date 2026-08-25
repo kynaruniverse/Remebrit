@@ -50,7 +50,7 @@ fun ShareCaptureScreen(initialText: String, onSave: (String) -> Unit, onCancel: 
     var text by remember { mutableStateOf(initialText) }
 
     Column(modifier = Modifier.padding(20.dp)) {
-        Text("Save this?", style = RemebritTheme.typography.titleLarge)
+        Text("Save this?", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(12.dp))
 
         OutlinedTextField(
