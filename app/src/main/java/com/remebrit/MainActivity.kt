@@ -103,14 +103,16 @@ fun HomeScreen(repository: ItemRepository, onOpenItem: (Long) -> Unit, onSearch:
 
         Spacer(Modifier.height(24.dp))
 
-        LazyColumn {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (sections.now.isNotEmpty()) {
                 item { SectionHeader("NOW") }
                 items(sections.now) { ItemRow(it, onOpenItem) }
+                item { HorizontalDivider(modifier = Modifier.padding(top = 12.dp)) }
             }
             if (sections.today.isNotEmpty()) {
                 item { SectionHeader("TODAY") }
                 items(sections.today) { ItemRow(it, onOpenItem) }
+                item { HorizontalDivider(modifier = Modifier.padding(top = 12.dp)) }
             }
             item { SectionHeader("INBOX") }
             items(sections.inbox) { ItemRow(it, onOpenItem) }
@@ -130,11 +132,17 @@ fun SectionHeader(title: String) {
 
 @Composable
 fun ItemRow(item: RemebritItem, onOpenItem: (Long) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp).clickable { onOpenItem(item.id) },
-        verticalAlignment = Alignment.CenterVertically
+    OutlinedCard(
+        onClick = { onOpenItem(item.id) },
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
     ) {
-        Text(item.content)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(item.content)
+        }
     }
 }
 

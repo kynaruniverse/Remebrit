@@ -32,7 +32,7 @@ class RemebritWidget : GlanceAppWidget() {
             ) {
                 Text(
                     "REMEBRIT",
-                    style = TextStyle(color = ColorProvider(Color(0xFFE7A83B)), fontWeight = FontWeight.Bold)
+                    style = TextStyle(color = ColorProvider(Color(0xFFB5502F)), fontWeight = FontWeight.Bold)
                 )
                 Text(
                     "What's on your mind?",
