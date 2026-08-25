@@ -3,31 +3,41 @@ package com.remebrit
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.remebrit.data.db.RemebritDatabase
 import com.remebrit.data.entity.RemebritItem
 import com.remebrit.data.repository.ItemRepository
 import com.remebrit.ui.home.HomeViewModel
 import com.remebrit.ui.item.ItemDetailViewModel
+import com.remebrit.ui.saved.SavedScreen
 import com.remebrit.ui.search.SearchScreen
 import com.remebrit.ui.theme.RemebritTheme
+import com.remebrit.ui.theme.ThemeMode
+import com.remebrit.ui.theme.ThemePreferences
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,28 +47,75 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private data class BottomDestination(val route: String, val label: String, val icon: ImageVector)
+
+private val bottomDestinations = listOf(
+    BottomDestination("home", "Home", Icons.Filled.Home),
+    BottomDestination("search", "Search", Icons.Filled.Search),
+    BottomDestination("saved", "Saved", Icons.Filled.Star)
+)
+
 @Composable
 fun RemebritApp(repository: ItemRepository) {
     val navController = rememberNavController()
-    RemebritTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            NavHost(navController = navController, startDestination = "home") {
-                composable("home") {
-                    HomeScreen(
-                        repository,
-                        onOpenItem = { id -> navController.navigate("item/$id") },
-                        onSearch = { navController.navigate("search") }
-                    )
-                }
-                composable("search") {
-                    SearchScreen(repository, onBack = { navController.popBackStack() }) { id ->
-                        navController.navigate("item/$id")
+    val context = LocalContext.current
+    var themeMode by remember { mutableStateOf(ThemePreferences.get(context)) }
+
+    RemebritTheme(themeMode = themeMode) {
+        Scaffold(
+            bottomBar = {
+                val backStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = backStackEntry?.destination?.route
+                if (bottomDestinations.any { it.route == currentRoute }) {
+                    NavigationBar {
+                        bottomDestinations.forEach { destination ->
+                            NavigationBarItem(
+                                selected = currentRoute == destination.route,
+                                onClick = {
+                                    navController.navigate(destination.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                                icon = { Icon(destination.icon, contentDescription = destination.label) },
+                                label = { Text(destination.label) }
+                            )
+                        }
                     }
                 }
-                composable("item/{id}") { backStackEntry ->
-                    val id = backStackEntry.arguments?.getString("id")?.toLongOrNull()
-                    if (id != null) {
-                        ItemDetailScreen(repository, id) { navController.popBackStack() }
+            }
+        ) { innerPadding ->
+            Surface(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                NavHost(navController = navController, startDestination = "home") {
+                    composable("home") {
+                        HomeScreen(
+                            repository,
+                            onOpenItem = { id -> navController.navigate("item/$id") },
+                            themeMode = themeMode,
+                            onToggleTheme = {
+                                themeMode = when (themeMode) {
+                                    ThemeMode.SYSTEM -> ThemeMode.LIGHT
+                                    ThemeMode.LIGHT -> ThemeMode.DARK
+                                    ThemeMode.DARK -> ThemeMode.SYSTEM
+                                }
+                                ThemePreferences.set(context, themeMode)
+                            }
+                        )
+                    }
+                    composable("search") {
+                        SearchScreen(repository, onBack = { navController.popBackStack() }) { id ->
+                            navController.navigate("item/$id")
+                        }
+                    }
+                    composable("saved") {
+                        SavedScreen(repository) { id -> navController.navigate("item/$id") }
+                    }
+                    composable("item/{id}") { backStackEntry ->
+                        val id = backStackEntry.arguments?.getString("id")?.toLongOrNull()
+                        if (id != null) {
+                            ItemDetailScreen(repository, id) { navController.popBackStack() }
+                        }
                     }
                 }
             }
@@ -67,7 +124,12 @@ fun RemebritApp(repository: ItemRepository) {
 }
 
 @Composable
-fun HomeScreen(repository: ItemRepository, onOpenItem: (Long) -> Unit, onSearch: () -> Unit) {
+fun HomeScreen(
+    repository: ItemRepository,
+    onOpenItem: (Long) -> Unit,
+    themeMode: ThemeMode,
+    onToggleTheme: () -> Unit
+) {
     val factory = viewModelFactory { initializer { HomeViewModel(repository) } }
     val viewModel: HomeViewModel = viewModel(factory = factory)
     val sections by viewModel.sections.collectAsState()
@@ -80,7 +142,13 @@ fun HomeScreen(repository: ItemRepository, onOpenItem: (Long) -> Unit, onSearch:
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Remebrit", style = MaterialTheme.typography.headlineMedium)
-            TextButton(onClick = onSearch) { Text("Search") }
+            TextButton(onClick = onToggleTheme) {
+                Text(when (themeMode) {
+                    ThemeMode.SYSTEM -> "Auto"
+                    ThemeMode.LIGHT -> "Light"
+                    ThemeMode.DARK -> "Dark"
+                })
+            }
         }
         Spacer(Modifier.height(16.dp))
 

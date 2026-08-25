@@ -47,6 +47,7 @@ fun RemebritTheme(
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
         shapes = RemebritShapes,
+        typography = RemebritTypography,
         content = content
     )
 }
