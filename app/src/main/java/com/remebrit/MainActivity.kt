@@ -27,6 +27,7 @@ import com.remebrit.data.repository.ItemRepository
 import com.remebrit.ui.home.HomeViewModel
 import com.remebrit.ui.item.ItemDetailViewModel
 import com.remebrit.ui.search.SearchScreen
+import com.remebrit.ui.theme.RemebritTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,7 +40,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun RemebritApp(repository: ItemRepository) {
     val navController = rememberNavController()
-    MaterialTheme {
+    RemebritTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             NavHost(navController = navController, startDestination = "home") {
                 composable("home") {
@@ -88,6 +89,7 @@ fun HomeScreen(repository: ItemRepository, onOpenItem: (Long) -> Unit, onSearch:
             onValueChange = { text = it },
             placeholder = { Text("What do you need to remember?") },
             modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.small,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = {
                 if (text.isNotBlank()) { viewModel.capture(text); text = "" }
@@ -118,7 +120,12 @@ fun HomeScreen(repository: ItemRepository, onOpenItem: (Long) -> Unit, onSearch:
 
 @Composable
 fun SectionHeader(title: String) {
-    Text(title, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+    Text(
+        title,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+    )
 }
 
 @Composable

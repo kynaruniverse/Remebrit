@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import com.remebrit.data.db.RemebritDatabase
 import com.remebrit.data.repository.ItemRepository
 import kotlinx.coroutines.launch
+import com.remebrit.ui.theme.RemebritTheme
 
 class ShareReceiverActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,7 +27,7 @@ class ShareReceiverActivity : ComponentActivity() {
         val repository = ItemRepository(RemebritDatabase.getInstance(applicationContext).itemDao())
 
         setContent {
-            MaterialTheme {
+            RemebritTheme {
                 Surface {
                     ShareCaptureScreen(
                         initialText = sharedText,
@@ -49,7 +50,7 @@ fun ShareCaptureScreen(initialText: String, onSave: (String) -> Unit, onCancel: 
     var text by remember { mutableStateOf(initialText) }
 
     Column(modifier = Modifier.padding(20.dp)) {
-        Text("Save this?", style = MaterialTheme.typography.titleLarge)
+        Text("Save this?", style = RemebritTheme.typography.titleLarge)
         Spacer(Modifier.height(12.dp))
 
         OutlinedTextField(
