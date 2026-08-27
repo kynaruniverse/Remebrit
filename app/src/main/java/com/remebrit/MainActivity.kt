@@ -13,17 +13,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Archive
-import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Notes
-import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Snooze
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -295,11 +293,10 @@ fun ItemRow(item: RemebritItem, onOpenItem: (Long) -> Unit) {
 private fun iconForContent(content: String): ImageVector {
     val entities = CaptureParser.parse(content)
     return when {
-        entities.any { it.type == EntityType.URL } -> Icons.Filled.Link
-        entities.any { it.type == EntityType.MONEY } -> Icons.Filled.AttachMoney
-        entities.any { it.type == EntityType.DATE || it.type == EntityType.TIME } -> Icons.Filled.Schedule
+        entities.any { it.type == EntityType.URL } -> Icons.Filled.Share
+        entities.any { it.type == EntityType.DATE || it.type == EntityType.TIME } -> Icons.Filled.Notifications
         entities.any { it.type == EntityType.TASK } -> Icons.Filled.CheckCircle
-        else -> Icons.Filled.Notes
+        else -> Icons.Filled.Info
     }
 }
 
@@ -347,10 +344,10 @@ fun ItemDetailScreen(repository: ItemRepository, itemId: Long, onBack: () -> Uni
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
             ) {
                 DetailAction(Icons.Filled.CheckCircle, "Complete") { viewModel.complete(current); onBack() }
-                DetailAction(Icons.Filled.Snooze, "Snooze") { viewModel.snoozeUntilTomorrow(current); onBack() }
+                DetailAction(Icons.Filled.Notifications, "Snooze") { viewModel.snoozeUntilTomorrow(current); onBack() }
                 DetailAction(Icons.Filled.Star, "Keep") { viewModel.keep(current); onBack() }
-                DetailAction(Icons.Filled.Archive, "Archive") { viewModel.archive(current); onBack() }
-                DetailAction(Icons.Filled.DeleteOutline, "Delete") { viewModel.delete(current); onBack() }
+                DetailAction(Icons.Filled.List, "Archive") { viewModel.archive(current); onBack() }
+                DetailAction(Icons.Filled.Delete, "Delete") { viewModel.delete(current); onBack() }
             }
         } ?: Text("Loading…")
     }
