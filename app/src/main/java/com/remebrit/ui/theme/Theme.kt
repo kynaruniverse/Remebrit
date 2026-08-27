@@ -17,7 +17,9 @@ private val LightColors = lightColorScheme(
     onBackground = LightOnBackground,
     onSurface = LightOnBackground,
     onSurfaceVariant = LightOnSurfaceVariant,
-    outline = LightOutline
+    outline = LightOutline,
+    secondaryContainer = SelectedContainerLight,
+    onSecondaryContainer = OnSelectedContainerLight
 )
 
 private val DarkColors = darkColorScheme(
@@ -28,7 +30,9 @@ private val DarkColors = darkColorScheme(
     onBackground = DarkOnBackground,
     onSurface = DarkOnBackground,
     onSurfaceVariant = DarkOnSurfaceVariant,
-    outline = DarkOutline
+    outline = DarkOutline,
+    secondaryContainer = SelectedContainerDark,
+    onSecondaryContainer = OnSelectedContainerDark
 )
 
 // Part 5.5: soft, restrained rounding — small controls 8dp, inputs 14dp, cards 16dp, large 20dp

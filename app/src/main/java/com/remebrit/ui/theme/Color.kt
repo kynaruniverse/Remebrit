@@ -26,3 +26,8 @@ val AccentDark = Color(0xFFB0897B)
 val LinkSlate = Color(0xFF6C8D96)      // candidate for links (Part 5.3)
 val SuccessSage = Color(0xFF8B9966)    // candidate for "completed" states
 val PowderBlue = Color(0xFFCBD8E6)     // unused for now
+
+val SelectedContainerLight = Color(0xFFE5D7CD)
+val OnSelectedContainerLight = Color(0xFF4A3830)
+val SelectedContainerDark = Color(0xFF4A3A34)
+val OnSelectedContainerDark = Color(0xFFF1E9DE)
