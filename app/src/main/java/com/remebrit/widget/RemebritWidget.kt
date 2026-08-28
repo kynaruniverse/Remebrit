@@ -26,17 +26,17 @@ class RemebritWidget : GlanceAppWidget() {
             Column(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .background(Color(0xFFFAF9F6))
+                    .background(Color(0xFFF7F6F4))
                     .padding(16.dp)
                     .clickable(actionStartActivity<MainActivity>())
             ) {
                 Text(
                     "REMEBRIT",
-                    style = TextStyle(color = ColorProvider(Color(0xFF93756A)), fontWeight = FontWeight.Bold)
+                    style = TextStyle(color = ColorProvider(Color(0xFF2A2A28)), fontWeight = FontWeight.Bold)
                 )
                 Text(
                     "What's on your mind?",
-                    style = TextStyle(color = ColorProvider(Color(0xFF252522)))
+                    style = TextStyle(color = ColorProvider(Color(0xFF8A8880)))
                 )
             }
         }

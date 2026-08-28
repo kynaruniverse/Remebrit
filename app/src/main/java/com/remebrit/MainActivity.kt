@@ -3,32 +3,21 @@ package com.remebrit
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
@@ -44,8 +33,6 @@ import androidx.navigation.compose.rememberNavController
 import com.remebrit.data.db.RemebritDatabase
 import com.remebrit.data.entity.RemebritItem
 import com.remebrit.data.repository.ItemRepository
-import com.remebrit.domain.parsing.CaptureParser
-import com.remebrit.domain.parsing.EntityType
 import com.remebrit.ui.home.HomeViewModel
 import com.remebrit.ui.item.ItemDetailViewModel
 import com.remebrit.ui.saved.SavedScreen
@@ -98,7 +85,14 @@ fun RemebritApp(repository: ItemRepository) {
                                     }
                                 },
                                 icon = { Icon(destination.icon, contentDescription = destination.label) },
-                                label = { Text(destination.label) }
+                                label = { Text(destination.label) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    indicatorColor = Color.Transparent,
+                                    selectedIconColor = MaterialTheme.colorScheme.onBackground,
+                                    selectedTextColor = MaterialTheme.colorScheme.onBackground,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             )
                         }
                     }
@@ -143,23 +137,6 @@ fun RemebritApp(repository: ItemRepository) {
 }
 
 @Composable
-fun LogoMark() {
-    Box(
-        modifier = Modifier
-            .size(36.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(MaterialTheme.colorScheme.primary),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            "R",
-            color = MaterialTheme.colorScheme.onPrimary,
-            style = MaterialTheme.typography.titleMedium
-        )
-    }
-}
-
-@Composable
 fun HomeScreen(
     repository: ItemRepository,
     onOpenItem: (Long) -> Unit,
@@ -170,45 +147,40 @@ fun HomeScreen(
     val viewModel: HomeViewModel = viewModel(factory = factory)
     val sections by viewModel.sections.collectAsState()
     var text by remember { mutableStateOf("") }
+    val allItems = sections.now + sections.today + sections.inbox
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LogoMark()
-                    Spacer(Modifier.width(10.dp))
-                    Text("Remebrit", style = MaterialTheme.typography.headlineMedium)
-                }
-                TextButton(onClick = onToggleTheme) {
-                    Text(when (themeMode) {
-                        ThemeMode.SYSTEM -> "Auto"
-                        ThemeMode.LIGHT -> "Light"
-                        ThemeMode.DARK -> "Dark"
-                    })
-                }
+            Text(
+                "Remebrit",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            TextButton(onClick = onToggleTheme) {
+                Text(when (themeMode) {
+                    ThemeMode.SYSTEM -> "Auto"
+                    ThemeMode.LIGHT -> "Light"
+                    ThemeMode.DARK -> "Dark"
+                })
             }
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
 
-        OutlinedTextField(
+        TextField(
             value = text,
             onValueChange = { text = it },
             placeholder = { Text("What do you need to remember?") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(elevation = 3.dp, shape = MaterialTheme.shapes.small, clip = false),
-            shape = MaterialTheme.shapes.small,
-            leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                unfocusedIndicatorColor = MaterialTheme.colorScheme.outline
+            ),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = {
                 if (text.isNotBlank()) { viewModel.capture(text); text = "" }
@@ -220,83 +192,28 @@ fun HomeScreen(
             }
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(28.dp))
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (sections.now.isNotEmpty()) {
-                item { SectionHeader("NOW", sections.now.size) }
-                items(sections.now) { ItemRow(it, onOpenItem) }
-                item { HorizontalDivider(modifier = Modifier.padding(top = 12.dp)) }
-            }
-            if (sections.today.isNotEmpty()) {
-                item { SectionHeader("TODAY", sections.today.size) }
-                items(sections.today) { ItemRow(it, onOpenItem) }
-                item { HorizontalDivider(modifier = Modifier.padding(top = 12.dp)) }
-            }
-            item { SectionHeader("INBOX", sections.inbox.size) }
-            items(sections.inbox) { ItemRow(it, onOpenItem) }
+        LazyColumn {
+            items(allItems) { ItemRow(it, onOpenItem) }
         }
-    }
-}
-
-@Composable
-fun SectionHeader(title: String, count: Int) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .clip(RoundedCornerShape(50))
-                .background(MaterialTheme.colorScheme.primary)
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            "$title ($count)",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
 @Composable
 fun ItemRow(item: RemebritItem, onOpenItem: (Long) -> Unit) {
-    val typeIcon = remember(item.content) { iconForContent(item.content) }
     val dateLabel = remember(item.relevantAt) { relativeDateLabel(item.relevantAt) }
-
-    OutlinedCard(
-        onClick = { onOpenItem(item.id) },
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpenItem(item.id) }
+            .padding(vertical = 14.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                typeIcon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(Modifier.width(12.dp))
-            Text(item.content, modifier = Modifier.weight(1f))
-            dateLabel?.let {
-                Spacer(Modifier.width(8.dp))
-                AssistChip(onClick = {}, label = { Text(it, style = MaterialTheme.typography.labelSmall) })
-            }
+        Text(item.content, style = MaterialTheme.typography.bodyLarge)
+        dateLabel?.let {
+            Spacer(Modifier.height(2.dp))
+            Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-    }
-}
-
-private fun iconForContent(content: String): ImageVector {
-    val entities = CaptureParser.parse(content)
-    return when {
-        entities.any { it.type == EntityType.URL } -> Icons.Filled.Share
-        entities.any { it.type == EntityType.DATE || it.type == EntityType.TIME } -> Icons.Filled.Notifications
-        entities.any { it.type == EntityType.TASK } -> Icons.Filled.CheckCircle
-        else -> Icons.Filled.Info
     }
 }
 
@@ -316,50 +233,35 @@ fun ItemDetailScreen(repository: ItemRepository, itemId: Long, onBack: () -> Uni
     val factory = viewModelFactory { initializer { ItemDetailViewModel(repository, itemId) } }
     val viewModel: ItemDetailViewModel = viewModel(factory = factory)
     val item by viewModel.item.collectAsState()
+    val plain = MaterialTheme.colorScheme.onBackground
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-        TextButton(onClick = onBack) { Text("← Back") }
+        TextButton(
+            onClick = onBack,
+            colors = ButtonDefaults.textButtonColors(contentColor = plain)
+        ) { Text("← Back") }
         Spacer(Modifier.height(16.dp))
 
         item?.let { current ->
             Text(current.content, style = MaterialTheme.typography.headlineSmall)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
+            Text(
+                current.status.name,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(24.dp))
 
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    current.status.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+            val actionColors = ButtonDefaults.textButtonColors(contentColor = plain)
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(onClick = { viewModel.complete(current); onBack() }, colors = actionColors) { Text("Complete") }
+                TextButton(onClick = { viewModel.snoozeUntilTomorrow(current); onBack() }, colors = actionColors) { Text("Snooze") }
             }
-            Spacer(Modifier.height(28.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-            ) {
-                DetailAction(Icons.Filled.CheckCircle, "Complete") { viewModel.complete(current); onBack() }
-                DetailAction(Icons.Filled.Notifications, "Snooze") { viewModel.snoozeUntilTomorrow(current); onBack() }
-                DetailAction(Icons.Filled.Star, "Keep") { viewModel.keep(current); onBack() }
-                DetailAction(Icons.Filled.List, "Archive") { viewModel.archive(current); onBack() }
-                DetailAction(Icons.Filled.Delete, "Delete") { viewModel.delete(current); onBack() }
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(onClick = { viewModel.keep(current); onBack() }, colors = actionColors) { Text("Keep") }
+                TextButton(onClick = { viewModel.archive(current); onBack() }, colors = actionColors) { Text("Archive") }
             }
+            TextButton(onClick = { viewModel.delete(current); onBack() }, colors = actionColors) { Text("Delete") }
         } ?: Text("Loading…")
-    }
-}
-
-@Composable
-private fun DetailAction(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        FilledTonalIconButton(onClick = onClick) {
-            Icon(icon, contentDescription = label)
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall)
     }
 }
