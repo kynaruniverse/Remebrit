@@ -34,9 +34,19 @@ import com.remebrit.data.db.RemebritDatabase
 import com.remebrit.data.entity.RemebritItem
 import com.remebrit.data.repository.ItemRepository
 import com.remebrit.ui.home.HomeViewModel
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import com.remebrit.notifications.ReminderScheduler
 import com.remebrit.ui.item.ItemDetailViewModel
 import com.remebrit.ui.saved.SavedScreen
 import com.remebrit.ui.search.SearchScreen
+import com.remebrit.onboarding.OnboardingPreferences
+import com.remebrit.ui.onboarding.OnboardingScreen
+import com.remebrit.ui.settings.SettingsScreen
 import com.remebrit.ui.theme.RemebritTheme
 import com.remebrit.ui.theme.ThemeMode
 import com.remebrit.ui.theme.ThemePreferences
@@ -66,6 +76,7 @@ fun RemebritApp(repository: ItemRepository) {
     val navController = rememberNavController()
     val context = LocalContext.current
     var themeMode by remember { mutableStateOf(ThemePreferences.get(context)) }
+    val startDestination = remember { if (OnboardingPreferences.isCompleted(context)) "home" else "onboarding" }
 
     RemebritTheme(themeMode = themeMode) {
         Scaffold(
@@ -100,12 +111,21 @@ fun RemebritApp(repository: ItemRepository) {
             }
         ) { innerPadding ->
             Surface(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                NavHost(navController = navController, startDestination = "home") {
+                NavHost(navController = navController, startDestination = startDestination) {
+                    composable("onboarding") {
+                        OnboardingScreen(onFinished = {
+                            OnboardingPreferences.setCompleted(context)
+                            navController.navigate("home") {
+                                popUpTo("onboarding") { inclusive = true }
+                            }
+                        })
+                    }
                     composable("home") {
                         HomeScreen(
                             repository,
                             onOpenItem = { id -> navController.navigate("item/$id") },
                             themeMode = themeMode,
+                            onOpenSettings = { navController.navigate("settings") },
                             onToggleTheme = {
                                 themeMode = when (themeMode) {
                                     ThemeMode.SYSTEM -> ThemeMode.LIGHT
@@ -124,6 +144,9 @@ fun RemebritApp(repository: ItemRepository) {
                     composable("saved") {
                         SavedScreen(repository) { id -> navController.navigate("item/$id") }
                     }
+                    composable("settings") {
+                        SettingsScreen(repository) { navController.popBackStack() }
+                    }
                     composable("item/{id}") { backStackEntry ->
                         val id = backStackEntry.arguments?.getString("id")?.toLongOrNull()
                         if (id != null) {
@@ -141,7 +164,8 @@ fun HomeScreen(
     repository: ItemRepository,
     onOpenItem: (Long) -> Unit,
     themeMode: ThemeMode,
-    onToggleTheme: () -> Unit
+    onToggleTheme: () -> Unit,
+    onOpenSettings: () -> Unit
 ) {
     val factory = viewModelFactory { initializer { HomeViewModel(repository) } }
     val viewModel: HomeViewModel = viewModel(factory = factory)
@@ -160,12 +184,15 @@ fun HomeScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.primary
             )
-            TextButton(onClick = onToggleTheme) {
-                Text(when (themeMode) {
-                    ThemeMode.SYSTEM -> "Auto"
-                    ThemeMode.LIGHT -> "Light"
-                    ThemeMode.DARK -> "Dark"
-                })
+            Row {
+                TextButton(onClick = onToggleTheme) {
+                    Text(when (themeMode) {
+                        ThemeMode.SYSTEM -> "Auto"
+                        ThemeMode.LIGHT -> "Light"
+                        ThemeMode.DARK -> "Dark"
+                    })
+                }
+                TextButton(onClick = onOpenSettings) { Text("Settings") }
             }
         }
         Spacer(Modifier.height(20.dp))
@@ -234,6 +261,18 @@ fun ItemDetailScreen(repository: ItemRepository, itemId: Long, onBack: () -> Uni
     val viewModel: ItemDetailViewModel = viewModel(factory = factory)
     val item by viewModel.item.collectAsState()
     val plain = MaterialTheme.colorScheme.onBackground
+    val context = LocalContext.current
+    var reminderStatus by remember { mutableStateOf<String?>(null) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val current = item
+        if (granted && current?.relevantAt != null) {
+            ReminderScheduler.schedule(context, current.id, current.content, current.relevantAt!!)
+            reminderStatus = "Reminder set"
+        } else {
+            reminderStatus = "Notifications permission not granted"
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
         TextButton(
@@ -253,6 +292,27 @@ fun ItemDetailScreen(repository: ItemRepository, itemId: Long, onBack: () -> Uni
             Spacer(Modifier.height(24.dp))
 
             val actionColors = ButtonDefaults.textButtonColors(contentColor = plain)
+
+            if (current.relevantAt != null && current.relevantAt > System.currentTimeMillis()) {
+                TextButton(
+                    onClick = {
+                        if (Build.VERSION.SDK_INT >= 33 &&
+                            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            ReminderScheduler.schedule(context, current.id, current.content, current.relevantAt!!)
+                            reminderStatus = "Reminder set"
+                        }
+                    },
+                    colors = actionColors
+                ) { Text("Remind me") }
+                reminderStatus?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 TextButton(onClick = { viewModel.complete(current); onBack() }, colors = actionColors) { Text("Complete") }
                 TextButton(onClick = { viewModel.snoozeUntilTomorrow(current); onBack() }, colors = actionColors) { Text("Snooze") }

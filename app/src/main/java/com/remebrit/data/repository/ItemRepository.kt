@@ -41,4 +41,10 @@ class ItemRepository(private val dao: ItemDao) {
     suspend fun delete(item: RemebritItem) {
         dao.delete(item)
     }
+    
+    suspend fun exportAll(): List<RemebritItem> = dao.getAll()
+
+    suspend fun importAll(items: List<RemebritItem>) {
+        dao.insertAll(items.map { it.copy(id = 0) }) // id = 0 lets Room assign fresh IDs, avoiding collisions
+    }
 }

@@ -15,6 +15,12 @@ interface ItemDao {
 
     @Delete
     suspend fun delete(item: RemebritItem)
+    
+    @Query("SELECT * FROM items")
+    suspend fun getAll(): List<RemebritItem>
+
+    @Insert
+    suspend fun insertAll(items: List<RemebritItem>)
 
     @Query("SELECT * FROM items WHERE id = :id")
     fun observeById(id: Long): Flow<RemebritItem?>
